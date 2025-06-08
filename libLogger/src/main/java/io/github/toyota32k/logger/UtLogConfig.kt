@@ -7,13 +7,12 @@ import android.util.Log
  */
 object UtLogConfig {
     /**
-     * 外部ログ出力先を設定します。
-     *
-     * null（デフォルト）の場合は、LogCat に出力します。
-     * エラーログをファイルに保存する、ログ画面に表示する、などの目的で利用できます。
+     * ログ出力先の追加・登録
+     * IUtLoggerの実装クラスを登録することができます。
+     * - OnMemoryLogger: Listとしてログを格納（ビューに表示する場合に使用）
+     * - FileLogger: ファイルにログを出力
      */
-    @JvmStatic
-    var externalLogger: IUtExternalLogger? = null
+    val logChain = UtLoggerChain()
 
     /**
      * ログレベルを設定します。

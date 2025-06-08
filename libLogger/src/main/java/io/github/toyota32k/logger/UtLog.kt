@@ -3,12 +3,15 @@ package io.github.toyota32k.logger
 import android.util.Log
 import java.io.Closeable
 
-class UtLog @JvmOverloads constructor(val tag:String, val parent:UtLog?=null, val omissionNamespace:String?=parent?.omissionNamespace, private val outputClassName:Boolean=true, private val outputMethodName:Boolean=true) {
+class UtLog @JvmOverloads constructor(
+    val tag:String,
+    val parent:UtLog?=null,
+    val omissionNamespace:String?=parent?.omissionNamespace,
+    private val outputClassName:Boolean=true,
+    private val outputMethodName:Boolean=true) {
     constructor(tag:String, parent:UtLog?, omissionNamespaceClass:Class<*>, outputClassName:Boolean=true, outputMethodName:Boolean=true):this(tag, parent, namespaceOfClass(omissionNamespaceClass), outputClassName, outputMethodName)
     companion object {
         var logLevelProvider:(()->Int)? = null
-        val logLevel: Int get() = logLevelProvider?.invoke() ?: UtLogConfig.logLevel
-
         fun hierarchicTag(tag:String, parent:UtLog?):String {
             return if(parent!=null) {
                 "${hierarchicTag(parent.tag, parent.parent)}.${tag}"
@@ -16,7 +19,6 @@ class UtLog @JvmOverloads constructor(val tag:String, val parent:UtLog?=null, va
                 tag
             }
         }
-
         fun namespaceOfClass(clazz:Class<*>):String {
             return clazz.name.substringBeforeLast(".", "").run {
                 if(isEmpty()) {
@@ -28,8 +30,8 @@ class UtLog @JvmOverloads constructor(val tag:String, val parent:UtLog?=null, va
         }
     }
 
-
-    private val logger = UtLoggerInstance(hierarchicTag(tag,parent))
+    open val logLevel: Int get() = logLevelProvider?.invoke() ?: UtLogConfig.logLevel
+    open val logger: IUtLogger = UtLogConfig.logChain
 
     private fun stripNamespace(classname:String):String {
         if(!omissionNamespace.isNullOrBlank() && classname.startsWith(omissionNamespace)) {
@@ -38,8 +40,6 @@ class UtLog @JvmOverloads constructor(val tag:String, val parent:UtLog?=null, va
             return classname
         }
     }
-
-//    var stackOffset:Int = 4
 
     private fun getCallerStack():StackTraceElement {
         val stack = Throwable().stackTrace  // Thread.currentThread().stackTrace  Throwable().stackTraceの方が速いらしい。
@@ -53,14 +53,6 @@ class UtLog @JvmOverloads constructor(val tag:String, val parent:UtLog?=null, va
 
     fun compose(message:String?):String {
         return if(outputClassName||outputMethodName) {
-//            val stack = Thread.currentThread().stackTrace
-//            var n:Int = stackOffset
-//            var e = stack[n]
-//            while(e.className == this.javaClass.name) {
-////            while(e.methodName.endsWith("\$default") && n<stack.size) {
-//                n++
-//                e = stack[n]
-//            }
             val e = getCallerStack()
             if(!outputClassName) {
                 if(message!=null) "${e.methodName}: $message" else e.methodName
@@ -77,72 +69,76 @@ class UtLog @JvmOverloads constructor(val tag:String, val parent:UtLog?=null, va
     @JvmOverloads
     fun debug(msg: String?=null) {
         if(logLevel<=Log.DEBUG) {
-            logger.debug(compose(msg))
+            logger.writeLog(Log.DEBUG, tag, compose(msg))
         }
     }
     fun debug(fn:()->String?) {
         if(logLevel<=Log.DEBUG) {
-            logger.debug(compose(fn()?:return))
+            logger.writeLog(Log.DEBUG, tag, compose(fn()?:return))
         }
     }
     fun debug(flag:Boolean, fn:()->String) {
         if(flag && logLevel<=Log.DEBUG) {
-            logger.debug(compose(fn()))
+            logger.writeLog(Log.DEBUG, tag, compose(fn()))
         }
     }
 
     @JvmOverloads
     fun warn(msg: String?=null) {
-        logger.warn(compose(msg))
+        logger.writeLog(Log.WARN, tag, compose(msg))
     }
 
     @JvmOverloads
     fun error(msg: String?=null) {
-        logger.error(compose(msg))
+        logger.writeLog(Log.ERROR, tag, compose(msg))
     }
 
     @JvmOverloads
     fun error(e:Throwable, msg:String?=null) {
-        logger.stackTrace(e, compose(msg))
+        error(msg)
+        e.message?.also { msg->
+            error(msg)
+        }
+        error(e.stackTraceToString())
     }
 
     @JvmOverloads
     fun info(msg: String?=null) {
-        logger.info(compose(msg))
+        logger.writeLog(Log.INFO, tag, compose(msg))
     }
 
     @JvmOverloads
     fun verbose(msg: String?=null) {
         if(logLevel<=Log.VERBOSE) {
-            logger.verbose(compose(msg))
+            logger.writeLog(Log.VERBOSE, tag, compose(msg))
         }
     }
     fun verbose(fn: () -> String) {
         if(logLevel<=Log.VERBOSE) {
-            logger.verbose(compose(fn()))
+            logger.writeLog(Log.VERBOSE, tag, compose(fn()))
         }
     }
 
     @JvmOverloads
     fun stackTrace(e:Throwable, msg:String?=null) {
-        logger.stackTrace(e, compose(msg))
+        if(msg!=null) {
+            error(msg)
+        }
+        e.message?.also { msg->
+            error(msg)
+        }
+        error(e.stackTraceToString())
     }
 
     @JvmOverloads
     fun print(level:Int, msg:String?=null) {
-        when(level) {
-            Log.ERROR -> ::error
-            Log.WARN -> ::warn
-            Log.INFO -> ::info
-            Log.DEBUG -> ::debug
-            else->::verbose
-        }(msg)
+        logger.writeLog(level, tag, compose(msg))
     }
 
     @JvmOverloads
     fun assert(chk:Boolean, msg:String?=null) {
         if(!chk) {
-            stackTrace(Exception("assertion failed."), compose(msg))
+            stackTrace(Exception("assertion failed."), msg)
         }
     }
 
@@ -158,10 +154,10 @@ class UtLog @JvmOverloads constructor(val tag:String, val parent:UtLog?=null, va
     }
 
     @JvmOverloads
-    fun scopeWatch(msg:String?=null) : Closeable {
+    fun scopeWatch(msg:String?=null, level:Int=Log.DEBUG) : Closeable {
         val composed = compose(msg)
-        logger.debug("$composed - enter")
-        return ScopeWatcher { logger.debug("$composed - exit") }
+        logger.writeLog(level, tag, "$composed - enter")
+        return ScopeWatcher { logger.writeLog(level, tag, "$composed - exit") }
     }
 
     private class ScopeWatcher(val leaving:()->Unit) : Closeable {
