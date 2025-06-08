@@ -30,8 +30,8 @@ class UtLog @JvmOverloads constructor(
         }
     }
 
-    open val logLevel: Int get() = logLevelProvider?.invoke() ?: UtLogConfig.logLevel
-    open val logger: IUtLogger = UtLogConfig.logChain
+    val logLevel: Int get() = logLevelProvider?.invoke() ?: UtLogConfig.logLevel
+    val logger: IUtLogger = UtLogConfig.logChain
 
     private fun stripNamespace(classname:String):String {
         if(!omissionNamespace.isNullOrBlank() && classname.startsWith(omissionNamespace)) {
