@@ -32,6 +32,8 @@ open class UtLog @JvmOverloads constructor(
 
     open val logLevel: Int get() = logLevelProvider?.invoke() ?: UtLogConfig.logLevel
     val logger: IUtLogger = UtLogConfig.logChain
+    var loggerClassName = UtLog::class.java.name
+    var chronosClassName = Chronos::class.java.name
 
     private fun stripNamespace(classname:String):String {
         if(!omissionNamespace.isNullOrBlank() && classname.startsWith(omissionNamespace)) {
@@ -43,8 +45,6 @@ open class UtLog @JvmOverloads constructor(
 
     private fun getCallerStack():StackTraceElement {
         val stack = Throwable().stackTrace  // Thread.currentThread().stackTrace  Throwable().stackTraceの方が速いらしい。
-        val loggerClassName = this.javaClass.name
-        val chronosClassName = Chronos::class.java.name
         var n = 0
         while(n<stack.size-1 && !stack[n].className.startsWith(loggerClassName)) { n++ }
         while(n<stack.size-1 && (stack[n].className.startsWith(loggerClassName)||stack[n].className.startsWith(chronosClassName))) { n++ }
