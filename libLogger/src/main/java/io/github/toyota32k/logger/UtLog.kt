@@ -1,17 +1,17 @@
 package io.github.toyota32k.logger
 
 import android.util.Log
+import io.github.toyota32k.logger.UtLogConfig.logLevelProvider
 import java.io.Closeable
 
-class UtLog @JvmOverloads constructor(
+open class UtLog @JvmOverloads constructor(
     val tag:String,
     val parent:UtLog?=null,
     val omissionNamespace:String?=parent?.omissionNamespace,
-    private val outputClassName:Boolean=true,
-    private val outputMethodName:Boolean=true) {
+    protected val outputClassName:Boolean=true,
+    protected val outputMethodName:Boolean=true) {
     constructor(tag:String, parent:UtLog?, omissionNamespaceClass:Class<*>, outputClassName:Boolean=true, outputMethodName:Boolean=true):this(tag, parent, namespaceOfClass(omissionNamespaceClass), outputClassName, outputMethodName)
     companion object {
-        var logLevelProvider:(()->Int)? = null
         fun hierarchicTag(tag:String, parent:UtLog?):String {
             return if(parent!=null) {
                 "${hierarchicTag(parent.tag, parent.parent)}.${tag}"
@@ -30,7 +30,7 @@ class UtLog @JvmOverloads constructor(
         }
     }
 
-    val logLevel: Int get() = logLevelProvider?.invoke() ?: UtLogConfig.logLevel
+    open val logLevel: Int get() = logLevelProvider?.invoke() ?: UtLogConfig.logLevel
     val logger: IUtLogger = UtLogConfig.logChain
 
     private fun stripNamespace(classname:String):String {
@@ -85,7 +85,9 @@ class UtLog @JvmOverloads constructor(
 
     @JvmOverloads
     fun warn(msg: String?=null) {
-        logger.writeLog(Log.WARN, tag, compose(msg))
+        if(logLevel<=Log.WARN) {
+            logger.writeLog(Log.WARN, tag, compose(msg))
+        }
     }
 
     @JvmOverloads
@@ -104,7 +106,9 @@ class UtLog @JvmOverloads constructor(
 
     @JvmOverloads
     fun info(msg: String?=null) {
-        logger.writeLog(Log.INFO, tag, compose(msg))
+        if(logLevel<=Log.INFO) {
+            logger.writeLog(Log.INFO, tag, compose(msg))
+        }
     }
 
     @JvmOverloads
@@ -113,8 +117,13 @@ class UtLog @JvmOverloads constructor(
             logger.writeLog(Log.VERBOSE, tag, compose(msg))
         }
     }
-    fun verbose(fn: () -> String) {
+    fun verbose(fn: () -> String?) {
         if(logLevel<=Log.VERBOSE) {
+            logger.writeLog(Log.VERBOSE, tag, compose(fn()?:return))
+        }
+    }
+    fun verbose(flag:Boolean, fn:()->String) {
+        if(flag && logLevel<=Log.VERBOSE) {
             logger.writeLog(Log.VERBOSE, tag, compose(fn()))
         }
     }
@@ -129,10 +138,24 @@ class UtLog @JvmOverloads constructor(
         }
         error(e.stackTraceToString())
     }
+    @JvmOverloads
+    fun stackTrace(level:Int, e:Throwable, msg:String?=null) {
+        if (logLevel <= level) {
+            if (msg != null) {
+                print(level, msg)
+            }
+            e.message?.also { msg ->
+                print(level, msg)
+            }
+            print(level, e.stackTraceToString())
+        }
+    }
 
     @JvmOverloads
     fun print(level:Int, msg:String?=null) {
-        logger.writeLog(level, tag, compose(msg))
+        if(logLevel <= level) {
+            logger.writeLog(level, tag, compose(msg))
+        }
     }
 
     @JvmOverloads
@@ -176,7 +199,7 @@ class UtLog @JvmOverloads constructor(
     }
 
     @JvmOverloads
-    inline fun <T> chronos(tag:String="TIME", msg:String?=null, level: Int=Log.DEBUG,  fn:()->T):T {
+    inline fun <T> chronos(tag:String="TIME", msg:String="", level: Int=Log.DEBUG,  fn:()->T):T {
         return if (level >= logLevel) {
             Chronos(this, tag = tag, logLevel = level).measure(msg) {
                 fn()

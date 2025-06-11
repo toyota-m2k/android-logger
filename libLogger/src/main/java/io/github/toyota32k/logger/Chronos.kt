@@ -5,7 +5,7 @@ import android.util.Log
 /**
  * 時間計測用ログ出力クラス
  */
-class Chronos @JvmOverloads constructor(callerLogger:UtLog, tag:String="TIME", val logLevel:Int= Log.DEBUG) {
+open class Chronos @JvmOverloads constructor(callerLogger:UtLog, tag:String="TIME", val logLevel:Int= Log.DEBUG) {
     var logger = UtLog(tag, callerLogger, callerLogger.omissionNamespace)
     var prev: Long = 0
     var start: Long = 0
@@ -37,32 +37,34 @@ class Chronos @JvmOverloads constructor(callerLogger:UtLog, tag:String="TIME", v
         prev = System.currentTimeMillis()
     }
 
-    @JvmOverloads
-    fun lap(msg: String = "") {
-        logger.print(logLevel,"lap = ${formatMS(lapTime)} $msg")
-    }
-
     fun formatMS(t: Long): String {
         return "${t / 1000f} sec"
     }
 
-    inline fun <T> measure(msg: String? = null, fn: () -> T): T {
+    open fun formatLap(msg:String):String {
+        return "lap = ${formatMS(lapTime)} $msg"
+    }
+
+    open fun formatEnter(msg:String):String {
+        return "enter $msg"
+    }
+    open fun formatExit(msg:String, begin:Long, end:Long):String {
+        return "exit ${formatMS(end - begin)} $msg"
+    }
+
+    @JvmOverloads
+    fun lap(msg: String = "") {
+        logger.print(logLevel, formatLap(msg))
+    }
+
+    @JvmOverloads
+    inline fun <T> measure(msg: String = "", fn: () -> T): T {
+        logger.print(logLevel, formatEnter(msg))
         val begin = System.currentTimeMillis()
-        logger.print(logLevel,"enter ${msg ?: ""}")
         return try {
             fn()
         } finally {
-            logger.print(logLevel, "exit ${formatMS(System.currentTimeMillis() - begin)} ${msg ?: ""}")
+            logger.print(logLevel, formatExit(msg, begin, System.currentTimeMillis()))
         }
     }
-
-//    suspend fun <T> measureAsync(msg: String? = null, fn: suspend () -> T): T {
-//        val begin = System.currentTimeMillis()
-//        logger.debug("enter ${msg ?: ""}")
-//        return try {
-//            fn()
-//        } finally {
-//            logger.debug("exit ${formatMS(System.currentTimeMillis() - begin)} ${msg ?: ""}")
-//        }
-//    }
 }

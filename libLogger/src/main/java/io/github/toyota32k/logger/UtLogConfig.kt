@@ -16,14 +16,17 @@ object UtLogConfig {
 
     /**
      * ログレベルを設定します。
-     * デフォルトはINFO ... info/warn/errorを出力。debag/varbose は出力しない。
-     * ログ出力モードなどのために、動的にログレベルを変えたいときは、
-     * UtLogConfig.logLevel より、UtLog.logLevelProvider が優先される。
-     * UtLog.logLevelProvider に null をセットすると、UtLogConfig.logLevel が参照される。
-     * その場合は、
+     * デフォルトはINFO ... info/warn/errorを出力。debag/varbose は出力されない。
      */
     @JvmStatic
     var logLevel:Int = Log.INFO
+
+    /**
+     * 動的にログレベルを変更するためのログレベル取得関数を設定します。
+     * この関数は logLevel の指定より優先されます。nullを設定すると、logLevel を参照します。
+     */
+    @JvmStatic
+    var logLevelProvider:(()->Int)? = null
 
     /**
      * デバッグモードかどうか
