@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">logger-sample</string>
+    <string name="button_test_1">Test-1</string>
+    <string name="button_test_2">Test-2</string>
+    <string name="button_test_3">Test-3</string>
+    <string name="button_test_4">Test-4</string>
+    <string name="button_test_5">Test-5</string>
+    <string name="button_test_6">Test-6</string>
+    <string name="button_test_7">Test-7</string>
 </resources>

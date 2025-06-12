@@ -1,12 +1,21 @@
 package io.github.toyota32k.logger
 
 import android.util.Log
+import io.github.toyota32k.logger.OnMemoryLogger.LogEntry
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.coroutines.CoroutineContext
 
 interface IUtLogger {
     fun writeLog(level:Int, tag:String, msg:String)
@@ -83,6 +92,16 @@ class OnMemoryLogger(val maxCount:Int = 1000) : IUtLogger {
         list.add(LogEntry(level, tag, msg))
     }
 }
+
+class FlowLogger(val flowCollector: FlowCollector<LogEntry> = MutableSharedFlow<LogEntry>(), val coroutineContext:CoroutineContext= Dispatchers.IO) : IUtLogger {
+    val scope = CoroutineScope(coroutineContext)
+    override fun writeLog(level:Int, tag:String, msg:String) {
+        scope.launch {
+            flowCollector.emit(LogEntry(level, tag, msg))
+        }
+    }
+}
+
 
 class FileLogger(val outputDirectory: String, val fileName: String, val maxFileSize: Long = 10 * 1024 * 1024, val maxFileCount: Int = 4) : IUtLogger {
     private val baseFile: File

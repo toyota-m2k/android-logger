@@ -29,6 +29,16 @@ object UtLogConfig {
     var logLevelProvider:(()->Int)? = null
 
     /**
+     * ロガー出力時にコールスタックから除外するクラス名
+     */
+    private val mRelevantClassNames = mutableListOf<String>(UtLog::class.java.name, Chronos::class.java.name)
+    val loggerRelevantClassNames: List<String> get() = mRelevantClassNames
+    @JvmStatic
+    fun addLoggerRelevantClasses(vararg clazz:Class<*>) {
+        mRelevantClassNames.addAll( clazz.map { it.name } )
+    }
+
+    /**
      * デバッグモードかどうか
      * trueにすると、assertStrongly()で例外をスローします。
      * 現時点では、他の用途には使われません。

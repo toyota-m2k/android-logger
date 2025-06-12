@@ -5,18 +5,18 @@ import io.github.toyota32k.logger.UtLogConfig.logLevelProvider
 import java.io.Closeable
 
 open class UtLog @JvmOverloads constructor(
-    val tag:String,
+    protected val leafTag:String,
     val parent:UtLog?=null,
-    val omissionNamespace:String?=parent?.omissionNamespace,
+    namespace:String?=null,
     protected val outputClassName:Boolean=true,
     protected val outputMethodName:Boolean=true) {
     constructor(tag:String, parent:UtLog?, omissionNamespaceClass:Class<*>, outputClassName:Boolean=true, outputMethodName:Boolean=true):this(tag, parent, namespaceOfClass(omissionNamespaceClass), outputClassName, outputMethodName)
     companion object {
-        fun hierarchicTag(tag:String, parent:UtLog?):String {
+        fun hierarchicTag(leafTag:String, parent:UtLog?):String {
             return if(parent!=null) {
-                "${hierarchicTag(parent.tag, parent.parent)}.${tag}"
+                "${hierarchicTag(parent.leafTag, parent.parent)}.${leafTag}"
             } else {
-                tag
+                leafTag
             }
         }
         fun namespaceOfClass(clazz:Class<*>):String {
@@ -29,11 +29,11 @@ open class UtLog @JvmOverloads constructor(
             }
         }
     }
+    protected val omissionNamespace:String? = namespace ?: parent?.omissionNamespace
+    protected val tag:String = hierarchicTag(leafTag, parent)
 
     open val logLevel: Int get() = logLevelProvider?.invoke() ?: UtLogConfig.logLevel
     val logger: IUtLogger = UtLogConfig.logChain
-    var loggerClassName = UtLog::class.java.name
-    var chronosClassName = Chronos::class.java.name
 
     private fun stripNamespace(classname:String):String {
         if(!omissionNamespace.isNullOrBlank() && classname.startsWith(omissionNamespace)) {
@@ -44,11 +44,12 @@ open class UtLog @JvmOverloads constructor(
     }
 
     private fun getCallerStack():StackTraceElement {
-        val stack = Throwable().stackTrace  // Thread.currentThread().stackTrace  Throwable().stackTraceの方が速いらしい。
-        var n = 0
-        while(n<stack.size-1 && !stack[n].className.startsWith(loggerClassName)) { n++ }
-        while(n<stack.size-1 && (stack[n].className.startsWith(loggerClassName)||stack[n].className.startsWith(chronosClassName))) { n++ }
-        return stack[n]
+        val stacks = Throwable().stackTrace  // Thread.currentThread().stackTrace  Throwable().stackTraceの方が速いらしい。
+        return stacks.first { stack->
+            stack.className.let { name->
+                UtLogConfig.loggerRelevantClassNames.all { !name.startsWith(it) }
+            }
+        }
     }
 
     fun compose(message:String?):String {

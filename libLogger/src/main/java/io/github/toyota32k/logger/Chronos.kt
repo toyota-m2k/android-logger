@@ -6,7 +6,7 @@ import android.util.Log
  * 時間計測用ログ出力クラス
  */
 open class Chronos @JvmOverloads constructor(callerLogger:UtLog, tag:String="TIME", val logLevel:Int= Log.DEBUG) {
-    var logger = UtLog(tag, callerLogger, callerLogger.omissionNamespace)
+    var logger = UtLog(tag, callerLogger)
     var prev: Long = 0
     var start: Long = 0
 
