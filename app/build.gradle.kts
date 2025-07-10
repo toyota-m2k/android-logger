@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "io.github.toyota32k.logger.sample"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "io.github.toyota32k.logger.sample"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
