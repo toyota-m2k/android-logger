@@ -1,12 +1,11 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import com.android.build.api.dsl.LibraryExtension
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     id("maven-publish")
 }
 
-android {
+configure<LibraryExtension> {
     namespace = "io.github.toyota32k.logger"
     compileSdk = 36
 
@@ -27,17 +26,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    packagingOptions.resources.excludes.add("META-INF/DEPENDENCIES")
+    packaging.resources.excludes.add("META-INF/DEPENDENCIES")
     publishing {
         singleVariant("release") {
             withSourcesJar()
         }
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
