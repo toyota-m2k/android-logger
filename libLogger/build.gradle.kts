@@ -7,7 +7,7 @@ plugins {
 
 configure<LibraryExtension> {
     namespace = "io.github.toyota32k.logger"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 23
@@ -23,8 +23,8 @@ configure<LibraryExtension> {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     packaging.resources.excludes.add("META-INF/DEPENDENCIES")
     publishing {
@@ -32,6 +32,10 @@ configure<LibraryExtension> {
             withSourcesJar()
         }
     }
+}
+
+kotlin {
+    jvmToolchain(21)
 }
 
 dependencies {
