@@ -7,7 +7,10 @@ plugins {
 
 configure<LibraryExtension> {
     namespace = "io.github.toyota32k.logger"
-    compileSdk = 37
+    compileSdk {
+        version = release(37)
+        compileSdkMinor = 1
+    }
 
     defaultConfig {
         minSdk = 23
