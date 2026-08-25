@@ -22,7 +22,7 @@ interface IUtLogger {
 }
 
 class UtLoggerChain : IUtLogger {
-    private var loggers: MutableList<IUtLogger> = mutableListOf(DebugLogger)
+    private val loggers: MutableList<IUtLogger> = mutableListOf(DebugLogger)
 
     operator fun plus(logger: IUtLogger): UtLoggerChain
         = apply {
@@ -44,6 +44,19 @@ class UtLoggerChain : IUtLogger {
     operator fun minusAssign(logger: IUtLogger) {
         synchronized(loggers) {
             loggers.remove(logger)
+        }
+    }
+    fun add(loggers: List<IUtLogger>) {
+        synchronized(this.loggers) {
+            this.loggers.addAll(loggers)
+        }
+    }
+    fun reset(enableDefaultLogger:Boolean=true) {
+        synchronized(loggers) {
+            loggers.clear()
+            if (enableDefaultLogger) {
+                loggers.add(DebugLogger)
+            }
         }
     }
 

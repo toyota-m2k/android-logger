@@ -45,4 +45,23 @@ object UtLogConfig {
      */
     @JvmStatic
     var debug:Boolean = false
+
+    fun setup(
+        loggers: List<IUtLogger> = emptyList(),
+        disableDefaultLogger:Boolean = false,
+        logLevel:Int = Log.INFO,
+        logLevelProvider:(()->Int)? = null,
+        relevantClassNames:List<String> = emptyList(),
+        debug:Boolean = false
+    ) {
+        this.logChain.reset(!disableDefaultLogger)
+        this.logChain.add(loggers)
+        this.logLevel = logLevel
+        this.logLevelProvider = logLevelProvider
+        if(relevantClassNames.isNotEmpty()) {
+            this.mRelevantClassNames.clear()
+            this.mRelevantClassNames.addAll(relevantClassNames)
+        }
+        this.debug = debug
+    }
 }
