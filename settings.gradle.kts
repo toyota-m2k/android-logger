@@ -20,5 +20,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "android-logger"
-include(":app")
 include(":libLogger")
+if (System.getenv("JITPACK") == null) {
+    include(":app")
+}
